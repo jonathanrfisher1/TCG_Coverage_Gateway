@@ -49,6 +49,7 @@ The TCG Coverage Gateway is a specialized toolset for **tournament coverage team
   - Generated graphics: Stream overlays, social media graphics
 - **API Layer**: RESTful endpoints for coverage team workflows
 - **Integration**: Import from tournament systems (Limitless, Play! Pokemon, RK9 Labs, etc.)
+- **Public Sharing**: Optional public URLs for graphics, tournaments, and decklists (when funded)
 
 ## Development Guidelines
 
@@ -197,6 +198,8 @@ API endpoints and their usage will be documented as they are developed.
 - location (text), event_type (text), player_count (integer)
 - status (text) - "upcoming", "in_progress", "completed"
 - metadata (jsonb) - Flexible event data
+- **is_public (boolean)** - Enable public tournament page
+- **share_slug (text)** - URL slug for sharing
 
 **players**
 - id (uuid, primary key)
@@ -215,6 +218,7 @@ API endpoints and their usage will be documented as they are developed.
 - **pdf_url (text)** - PDF export URL
 - placement (integer), record (text), day_2_qualified (boolean)
 - featured (boolean), notes (text), tags (text array)
+- **is_public (boolean)** - Enable in public deck database
 
 **generated_graphics**
 - id (uuid, primary key)
@@ -223,6 +227,9 @@ API endpoints and their usage will be documented as they are developed.
 - image_url (text) - Generated graphic URL
 - template_used (text), metadata (jsonb)
 - created_by (uuid) - Coverage user who created it
+- **is_public (boolean)** - Enable public sharing
+- **share_slug (text)** - Human-readable URL (e.g., "charizard-deck-profile-2025")
+- **view_count (integer)** - Track public views
 
 **coverage_users**
 - id (uuid, primary key)
@@ -236,12 +243,76 @@ API endpoints and their usage will be documented as they are developed.
 
 ### File Storage Structure
 
-**Supabase Storage Buckets:**
+**Supabase Storage Buckets (All Public-Readable):**
 - `decklist-images/` - PNG screenshots from tournament software
 - `decklist-pdfs/` - PDF exports from tournament software
 - `decklist-json/` - JSON files (optional, can use JSONB column)
 - `generated-graphics/` - Graphics created for streaming/social media
 - `coverage-reports/` - Final coverage documents/reports
+
+**Note**: All buckets are configured as `public: true`, which means files have public URLs that can be shared directly. Coverage teams can toggle individual resources as public/private using the `is_public` flag in the database.
+
+## Public Sharing Features (Future Enhancement)
+
+When donations cover cloud costs, coverage teams can enable public sharing:
+
+### Public URLs for Resources
+
+**Generated Graphics** (`/public/graphic/:slug`):
+```
+https://tcg-coverage.com/public/graphic/charizard-deck-profile-2025
+→ Shows graphic with context (tournament, player, deck)
+→ Embeddable for articles/social media
+```
+
+**Tournament Pages** (`/public/tournament/:slug`):
+```
+https://tcg-coverage.com/public/tournament/nashville-regionals-2025
+→ Shows standings, featured decklists, results
+→ Shareable link for players and viewers
+```
+
+**Deck Database** (`/public/decks`):
+```
+https://tcg-coverage.com/public/decks?archetype=charizard
+→ Browse public decklists by archetype
+→ Filter by tournament, format, date
+```
+
+### API Endpoints for Sharing
+
+```javascript
+// Toggle public visibility
+PATCH /api/v1/graphics/:id
+{ "is_public": true, "share_slug": "charizard-deck-profile-2025" }
+
+// Get shareable link
+GET /api/v1/graphics/:id/share
+→ { shareUrl, embedCode, socialMediaText }
+
+// Track views
+POST /api/v1/public/graphic/:slug/view
+→ Increments view_count
+```
+
+### Bandwidth Management
+
+**Free Tier (5GB/month)**:
+- Suitable for internal coverage team use
+- Limited public sharing (a few popular graphics)
+
+**Paid Tier ($25/month = 200GB bandwidth)**:
+- Full public sharing capability
+- Can handle viral graphics on social media
+- Support for public deck database
+
+### Monitoring Dashboard
+
+Track resource usage:
+- Storage used (images, PDFs, graphics)
+- Bandwidth used this month
+- Most viewed public graphics
+- Alert when approaching limits
 
 ## Troubleshooting
 
@@ -293,12 +364,21 @@ As development progresses, this file should be updated with:
 **Supabase Free Tier:**
 - Database: 500MB (monitor with Supabase dashboard)
 - Storage: 1GB for files (track PNG/PDF usage)
-- Bandwidth: 5GB/month
+- **Bandwidth: 5GB/month** - Critical for public sharing!
 - API requests: Unlimited (with rate limiting)
+
+**Paid Tier Upgrade Path (when donations cover costs):**
+- Supabase Pro: $25/month
+  - 8GB database
+  - 100GB storage
+  - **200GB bandwidth** - Much better for public sharing
+  - Daily backups
 
 **Best Practices:**
 - Optimize PNG file sizes before upload
 - Use PDF compression for coverage reports
 - Implement pagination for large datasets
 - Monitor storage usage monthly
+- **Monitor bandwidth usage if enabling public sharing**
 - Set up alerts when approaching limits
+- Consider CDN caching for popular public resources

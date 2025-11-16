@@ -19,6 +19,7 @@ Coverage teams work with decklist data that has already been submitted by player
 - **Multi-Format Import**: Accept decklists as JSON (from tournament software), PNG (screenshots), or PDF (exports)
 - **Tournament Management**: Track events, players, standings, and match results
 - **Graphics Generation**: Create stream overlays, deck profiles, and social media graphics
+- **Public Sharing** (when funded): Share graphics, tournaments, and decklists via public URLs
 - **Free Tier Friendly**: Built entirely on free services (Supabase)
 - **Coverage Team Focused**: Workflows designed for live tournament coverage
 
@@ -239,6 +240,13 @@ POST /api/v1/matches
 - `POST /api/v1/graphics/generate` - Generate graphic
 - `GET /api/v1/graphics` - List generated graphics
 - `GET /api/v1/graphics/:id` - Get graphic details
+- `PATCH /api/v1/graphics/:id` - Update (toggle public, set share slug)
+- `GET /api/v1/graphics/:id/share` - Get shareable link
+
+### Public Sharing (Future)
+- `GET /public/graphic/:slug` - View public graphic
+- `GET /public/tournament/:slug` - View public tournament
+- `GET /public/decks` - Browse public deck database
 
 ## Development
 
@@ -263,10 +271,18 @@ npm run lint:fix
 - Bandwidth: 5GB/month
 - API Requests: Unlimited (with rate limiting)
 
+**Upgrade Path (when donations cover costs):**
+- **Supabase Pro**: $25/month
+  - 8GB database
+  - 100GB storage
+  - **200GB bandwidth** (vs 5GB free) - Critical for public sharing!
+  - Daily backups
+
 **Best Practices:**
 - Compress PNG files before upload
 - Use PDF compression
 - Archive old tournaments to save space
+- **Monitor bandwidth if enabling public sharing**
 - Monitor usage in Supabase Dashboard
 
 ## Deployment
