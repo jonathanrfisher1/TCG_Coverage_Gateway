@@ -2,13 +2,17 @@
 
 ## Project Overview
 
-This is the TCG Coverage Gateway project - a system designed to manage and track Trading Card Game (TCG) coverage data. The gateway serves as a central point for handling TCG-related information, inventory tracking, or data aggregation.
+The TCG Coverage Gateway is a specialized toolset for **tournament coverage teams**. This platform helps coverage teams manage tournament data, import and organize player decklists from various sources (JSON, PNG, PDF), generate graphics for streaming overlays, and streamline coverage workflows.
+
+**This is NOT a deck-building or card management platform.** All decklist data is imported second-hand from tournament software after players have already submitted their lists.
 
 ## Project Context
 
 **Repository**: jonathanrfisher1/TCG_Coverage_Gateway
 **Status**: Greenfield project
-**Purpose**: Trading Card Game coverage gateway and data management system
+**Purpose**: Tournament coverage team tools and workflow automation
+**Target Users**: Coverage teams, tournament organizers, streaming producers
+**Key Use Case**: Import decklist data from tournament software, organize it, and generate graphics/reports for live coverage
 
 ## Architecture & Technology Stack
 
@@ -30,17 +34,21 @@ This is the TCG Coverage Gateway project - a system designed to manage and track
 
 ### Application Components
 
-- **Backend**: Node.js/Express or Python/FastAPI
-- **Database**: PostgreSQL for structured TCG data
-  - Card information
-  - Coverage metrics
-  - User data
-  - Decklist metadata
-- **File Storage**:
-  - PNG files: Decklist images, card scans
-  - PDF files: Tournament reports, coverage documents
-- **API Layer**: RESTful endpoints for data access
-- **Integration**: Potential connections to TCG data providers
+- **Backend**: Node.js/Express API server
+- **Database**: PostgreSQL for coverage workflow data
+  - Tournaments and events
+  - Players (tournament participants)
+  - Imported decklists (JSON/PNG/PDF from tournament software)
+  - Generated graphics metadata
+  - Match tracking (optional)
+  - Coverage team users
+- **File Storage**: Supabase Storage for coverage assets
+  - PNG files: Decklist screenshots from tournament software
+  - PDF files: Decklist exports, coverage reports
+  - JSON files: Raw tournament data imports
+  - Generated graphics: Stream overlays, social media graphics
+- **API Layer**: RESTful endpoints for coverage team workflows
+- **Integration**: Import from tournament systems (Limitless, Play! Pokemon, RK9 Labs, etc.)
 
 ## Development Guidelines
 
@@ -90,10 +98,11 @@ TCG_Coverage_Gateway/
 ├── src/
 │   ├── api/
 │   │   ├── routes/
-│   │   │   ├── cards.js
+│   │   │   ├── tournaments.js
 │   │   │   ├── decklists.js
-│   │   │   ├── coverage.js
-│   │   │   └── upload.js
+│   │   │   ├── players.js
+│   │   │   ├── graphics.js
+│   │   │   └── import.js
 │   │   └── middleware/
 │   │       ├── auth.js
 │   │       ├── fileUpload.js
@@ -103,9 +112,10 @@ TCG_Coverage_Gateway/
 │   │   ├── storage.js
 │   │   └── database.js
 │   ├── models/
-│   │   ├── Card.js
+│   │   ├── Tournament.js
 │   │   ├── Decklist.js
-│   │   └── CoverageEvent.js
+│   │   ├── Player.js
+│   │   └── Graphic.js
 │   └── utils/
 │       ├── fileValidation.js
 │       └── errorHandler.js
@@ -178,55 +188,60 @@ API endpoints and their usage will be documented as they are developed.
 
 ### Core Tables (PostgreSQL)
 
-**cards**
+**tournaments**
 - id (uuid, primary key)
-- name (text)
-- set_name (text)
-- card_number (text)
-- rarity (text)
-- tcg_type (text) - e.g., "Pokemon", "Magic", "Yu-Gi-Oh"
-- metadata (jsonb) - flexible storage for card-specific attributes
-- created_at (timestamp)
-- updated_at (timestamp)
+- name (text) - Tournament name
+- tcg_type (text) - "Pokemon", "Magic", "Yu-Gi-Oh", etc.
+- format (text) - "Standard", "Modern", "Expanded", etc.
+- start_date (date), end_date (date)
+- location (text), event_type (text), player_count (integer)
+- status (text) - "upcoming", "in_progress", "completed"
+- metadata (jsonb) - Flexible event data
 
-**decklists**
+**players**
 - id (uuid, primary key)
-- title (text)
-- description (text)
-- tcg_type (text)
-- format (text) - e.g., "Standard", "Modern", "Expanded"
-- user_id (uuid, foreign key)
-- image_url (text) - PNG file URL from storage
-- pdf_url (text) - PDF file URL from storage
-- deck_data (jsonb) - card list with quantities
-- created_at (timestamp)
-- updated_at (timestamp)
+- name (text) - Player name
+- country (text)
+- player_id_external (text) - External ID from tournament software
+- metadata (jsonb) - Social media, pronouns, etc.
 
-**coverage_events**
+**decklists** - Core coverage data
 - id (uuid, primary key)
-- event_name (text)
-- event_date (date)
-- location (text)
-- tcg_type (text)
-- description (text)
-- report_pdf_url (text) - PDF coverage report from storage
-- created_at (timestamp)
-- updated_at (timestamp)
+- tournament_id (uuid), player_id (uuid)
+- deck_name (text) - e.g., "Charizard ex", archetype (text)
+- **source_type (text)** - **'json', 'png', or 'pdf'**
+- **json_data (jsonb)** - Raw JSON from tournament software
+- **image_url (text)** - PNG screenshot URL
+- **pdf_url (text)** - PDF export URL
+- placement (integer), record (text), day_2_qualified (boolean)
+- featured (boolean), notes (text), tags (text array)
 
-**users**
+**generated_graphics**
 - id (uuid, primary key)
-- email (text, unique)
-- username (text, unique)
-- created_at (timestamp)
-- updated_at (timestamp)
+- tournament_id (uuid), decklist_id (uuid)
+- graphic_type (text) - 'overlay', 'standings', 'deck_profile'
+- image_url (text) - Generated graphic URL
+- template_used (text), metadata (jsonb)
+- created_by (uuid) - Coverage user who created it
+
+**coverage_users**
+- id (uuid, primary key)
+- email (text), username (text)
+- role (text) - 'admin', 'coverage_team', 'viewer'
+
+**matches** (optional)
+- id, tournament_id, round_number, table_number
+- player1_id, player2_id, player1_decklist_id, player2_decklist_id
+- result, winner_id, featured (boolean), video_url, notes
 
 ### File Storage Structure
 
 **Supabase Storage Buckets:**
-- `decklists-images/` - PNG decklist images
-- `decklists-pdfs/` - PDF decklist exports
-- `coverage-reports/` - PDF tournament/event reports
-- `card-scans/` - PNG card images
+- `decklist-images/` - PNG screenshots from tournament software
+- `decklist-pdfs/` - PDF exports from tournament software
+- `decklist-json/` - JSON files (optional, can use JSONB column)
+- `generated-graphics/` - Graphics created for streaming/social media
+- `coverage-reports/` - Final coverage documents/reports
 
 ## Troubleshooting
 
@@ -251,13 +266,14 @@ Guidelines for contributing to this project:
 
 When working on this project:
 
-- This is a greenfield project - make architectural decisions thoughtfully
-- Prioritize clean, maintainable code over quick solutions
-- Document design decisions and trade-offs
-- Consider scalability and performance from the start
-- Ask clarifying questions when requirements are ambiguous
-- Suggest best practices for the chosen technology stack
-- Keep security considerations in mind (API authentication, data validation, etc.)
+- **This is a coverage team tool, NOT a deck-building platform**
+- All decklist data is imported second-hand from tournament software
+- No individual card management or deck creation features needed
+- Focus on data import (JSON/PNG/PDF), organization, and graphics generation
+- Prioritize coverage team workflow efficiency
+- Consider scalability for large tournaments (500+ players)
+- Keep security in mind (API authentication for coverage team only)
+- Ask clarifying questions when coverage workflows are ambiguous
 
 ## Updates Needed
 

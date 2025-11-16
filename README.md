@@ -1,22 +1,37 @@
 # TCG Coverage Gateway
 
-A Trading Card Game coverage gateway and data management system with support for storing decklists (PNG/PDF) and managing TCG coverage data.
+A specialized platform for tournament coverage teams to manage TCG tournament data, import player decklists from various sources, and generate graphics for streaming and social media.
+
+## Purpose
+
+**This is a coverage team workflow tool - NOT a deck-building platform.**
+
+Coverage teams work with decklist data that has already been submitted by players through tournament software. This platform helps you:
+
+- Import decklist data from JSON exports, PNG screenshots, or PDF files
+- Organize tournaments, players, and decklists
+- Generate graphics for streaming overlays and social media
+- Track featured matches and create coverage reports
+- Manage coverage workflows efficiently
 
 ## Features
 
-- **Database**: PostgreSQL via Supabase (500MB free tier)
-- **File Storage**: PNG and PDF storage via Supabase Storage (1GB free tier)
-- **RESTful API**: Express.js backend with structured endpoints
-- **File Management**: Upload, store, and retrieve decklist images and PDFs
-- **Multi-TCG Support**: Pokemon, Magic: The Gathering, Yu-Gi-Oh, and more
-- **Coverage Tracking**: Event coverage and tournament reporting
+- **Multi-Format Import**: Accept decklists as JSON (from tournament software), PNG (screenshots), or PDF (exports)
+- **Tournament Management**: Track events, players, standings, and match results
+- **Graphics Generation**: Create stream overlays, deck profiles, and social media graphics
+- **Free Tier Friendly**: Built entirely on free services (Supabase)
+- **Coverage Team Focused**: Workflows designed for live tournament coverage
 
 ## Tech Stack
 
 - **Backend**: Node.js + Express.js
-- **Database**: PostgreSQL (Supabase)
-- **Storage**: Supabase Storage (PNG/PDF files)
-- **Authentication**: Supabase Auth (ready to use)
+- **Database**: PostgreSQL via Supabase (500MB free tier)
+- **Storage**: Supabase Storage for files (1GB free tier)
+  - PNG screenshots from tournament software
+  - PDF decklist exports
+  - JSON tournament data
+  - Generated graphics
+- **Authentication**: Supabase Auth (for coverage team access)
 
 ## Prerequisites
 
@@ -36,10 +51,10 @@ npm install
 
 ### 2. Set Up Supabase
 
-1. Go to [supabase.com](https://supabase.com) and create a free account
+1. Create account at [supabase.com](https://supabase.com)
 2. Create a new project
 3. Go to Project Settings > API
-4. Copy your project URL and anon key
+4. Copy your project URL and API keys
 
 ### 3. Configure Environment
 
@@ -47,7 +62,7 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your Supabase credentials:
+Edit `.env` with your Supabase credentials:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
@@ -57,129 +72,173 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
 ### 4. Set Up Database
 
-1. Go to Supabase Dashboard > SQL Editor
-2. Run the migration files in order:
+1. Open Supabase Dashboard > SQL Editor
+2. Run migrations in order:
    - `migrations/sql/001_initial_schema.sql`
    - `migrations/sql/002_storage_buckets.sql`
+
+This creates:
+- `tournaments` table - Event tracking
+- `players` table - Tournament participants
+- `decklists` table - Imported decklist data
+- `generated_graphics` table - Created graphics metadata
+- `matches` table - Match tracking (optional)
+- Storage buckets for files
 
 ### 5. Run the Application
 
 ```bash
-# Development mode with auto-reload
+# Development mode
 npm run dev
 
 # Production mode
 npm start
 ```
 
-The server will start on `http://localhost:3000`
+Server runs at `http://localhost:3000`
 
-## API Endpoints
+## Coverage Team Workflows
 
-### Health Check
+### Workflow 1: Import Tournament Data
+
+1. **Create Tournament**
+   ```
+   POST /api/v1/tournaments
+   {
+     "name": "Regional Championship",
+     "tcg_type": "Pokemon",
+     "format": "Standard",
+     "start_date": "2025-01-15"
+   }
+   ```
+
+2. **Import Decklists**
+
+   **From JSON** (e.g., from Limitless, Play! Pokemon):
+   ```
+   POST /api/v1/import/json
+   {
+     "tournament_id": "uuid",
+     "json_data": { ... }
+   }
+   ```
+
+   **From PNG/PDF**:
+   ```
+   POST /api/v1/import/file
+   - Upload PNG screenshot or PDF export
+   - Automatically stores in Supabase Storage
+   - Creates decklist record with file URL
+   ```
+
+3. **Tag Featured Decklists**
+   ```
+   PATCH /api/v1/decklists/{id}
+   {
+     "featured": true,
+     "tags": ["top8", "featured"]
+   }
+   ```
+
+### Workflow 2: Generate Graphics
+
+1. **Create Stream Overlay**
+   ```
+   POST /api/v1/graphics/generate
+   {
+     "type": "deck_profile",
+     "decklist_id": "uuid",
+     "template": "standard_overlay"
+   }
+   ```
+
+2. **Access Generated Graphic**
+   - Graphic saved to `generated-graphics/` bucket
+   - Public URL returned for OBS/streaming software
+
+### Workflow 3: Track Matches
+
 ```
-GET /health
-```
-
-### API Info
-```
-GET /api/v1
-```
-
-### Planned Endpoints
-- `GET /api/v1/cards` - List all cards
-- `POST /api/v1/cards` - Create a new card
-- `GET /api/v1/decklists` - List all decklists
-- `POST /api/v1/decklists` - Create a new decklist
-- `POST /api/v1/upload` - Upload PNG/PDF files
-- `GET /api/v1/coverage` - List coverage events
-
-## Project Structure
-
-```
-TCG_Coverage_Gateway/
-├── src/
-│   ├── api/
-│   │   ├── routes/         # API route handlers
-│   │   └── middleware/     # Express middleware
-│   ├── services/
-│   │   ├── supabase.js     # Supabase client setup
-│   │   ├── storage.js      # File storage operations
-│   │   └── database.js     # Database queries
-│   ├── models/             # Data models
-│   ├── utils/              # Utility functions
-│   └── index.js            # Application entry point
-├── tests/                  # Unit and integration tests
-├── migrations/             # Database migrations
-├── config/                 # Configuration files
-└── docs/                   # Documentation
+POST /api/v1/matches
+{
+  "tournament_id": "uuid",
+  "round_number": 1,
+  "player1_id": "uuid",
+  "player2_id": "uuid",
+  "featured": true
+}
 ```
 
 ## Database Schema
 
-### Tables
+### Key Tables
 
-**cards**
-- Stores TCG card information
-- Supports multiple TCG types (Pokemon, Magic, Yu-Gi-Oh)
-- JSONB metadata for flexible attributes
+**tournaments**
+- Stores event information
+- Tracks status (upcoming/in_progress/completed)
+- Links to all decklists for that event
+
+**players**
+- Tournament participants
+- External IDs from tournament software
+- Metadata (country, social media, etc.)
 
 **decklists**
-- Stores decklist information
-- Links to PNG images and PDF exports
-- Supports deck composition via JSONB
+- **Core coverage data**
+- Links to tournament and player
+- **source_type**: 'json', 'png', or 'pdf'
+- Stores data in appropriate field (json_data, image_url, pdf_url)
+- Tournament context (placement, record, etc.)
+- Coverage metadata (featured, tags, notes)
 
-**coverage_events**
-- Tournament and event coverage
-- Links to PDF coverage reports
-- Date-based event tracking
+**generated_graphics**
+- Metadata for created graphics
+- Links to source decklist/tournament
+- Template information
 
-**users**
-- User management
-- Links to decklists
+## File Storage
 
-### Storage Buckets
+### Supabase Storage Buckets
 
-- `decklists-images/` - PNG decklist images (max 10MB per file)
-- `decklists-pdfs/` - PDF decklist exports
-- `coverage-reports/` - PDF tournament reports
-- `card-scans/` - PNG card images
+- `decklist-images/` - PNG screenshots (10MB max each)
+- `decklist-pdfs/` - PDF exports
+- `decklist-json/` - JSON files (optional)
+- `generated-graphics/` - Stream overlays, graphics
+- `coverage-reports/` - Final reports
 
-## File Upload
+### Supported Formats
 
-### Supported File Types
-- PNG images (`image/png`)
-- PDF documents (`application/pdf`)
+**Decklist Imports:**
+- JSON from tournament software
+- PNG screenshots (max 10MB)
+- PDF exports (max 10MB)
 
-### File Size Limits
-- Maximum: 10MB per file (configurable via `MAX_FILE_SIZE`)
+**Generated Graphics:**
+- PNG output for stream overlays
+- Customizable templates
 
-### Upload Example
-```javascript
-// Using FormData
-const formData = new FormData();
-formData.append('file', fileInput.files[0]);
-formData.append('type', 'decklist');
+## API Endpoints
 
-fetch('/api/v1/upload', {
-  method: 'POST',
-  body: formData
-});
-```
+### Tournaments
+- `GET /api/v1/tournaments` - List all tournaments
+- `POST /api/v1/tournaments` - Create tournament
+- `GET /api/v1/tournaments/:id` - Get tournament details
+- `PATCH /api/v1/tournaments/:id` - Update tournament
 
-## Free Tier Limits
+### Decklists
+- `GET /api/v1/decklists` - List decklists (filterable)
+- `GET /api/v1/decklists?tournament_id={id}` - Tournament decklists
+- `POST /api/v1/decklists` - Create decklist entry
+- `PATCH /api/v1/decklists/:id` - Update (tag, notes, etc.)
 
-**Supabase Free Tier:**
-- Database: 500MB storage
-- File Storage: 1GB storage
-- Bandwidth: 5GB/month
-- API Requests: Unlimited (with rate limiting)
+### Import
+- `POST /api/v1/import/json` - Import JSON tournament data
+- `POST /api/v1/import/file` - Upload PNG/PDF decklist
 
-**Best Practices:**
-- Optimize PNG images before upload
-- Compress PDFs when possible
-- Implement pagination for large datasets
-- Monitor usage via Supabase Dashboard
+### Graphics
+- `POST /api/v1/graphics/generate` - Generate graphic
+- `GET /api/v1/graphics` - List generated graphics
+- `GET /api/v1/graphics/:id` - Get graphic details
 
 ## Development
 
@@ -196,46 +255,59 @@ npm run lint
 npm run lint:fix
 ```
 
-## Environment Variables
+## Free Tier Limits
 
-See `.env.example` for all available configuration options.
+**Supabase Free Tier:**
+- Database: 500MB storage
+- File Storage: 1GB storage
+- Bandwidth: 5GB/month
+- API Requests: Unlimited (with rate limiting)
 
-Required:
-- `SUPABASE_URL` - Your Supabase project URL
-- `SUPABASE_ANON_KEY` - Supabase anonymous key
-
-Optional:
-- `PORT` - Server port (default: 3000)
-- `MAX_FILE_SIZE` - Max upload size in bytes (default: 10MB)
-- `ALLOWED_FILE_TYPES` - Comma-separated MIME types
+**Best Practices:**
+- Compress PNG files before upload
+- Use PDF compression
+- Archive old tournaments to save space
+- Monitor usage in Supabase Dashboard
 
 ## Deployment
 
-This application can be deployed to:
-- **Vercel** - Serverless functions
+Deploy to any of these free platforms:
+- **Vercel** - Serverless (recommended for Node.js)
 - **Railway** - Container deployment
 - **Render** - Free tier available
 - **Fly.io** - Free tier available
 
-All use the same Supabase backend (no separate database hosting needed).
+All use the same Supabase backend.
 
 ## Contributing
 
-1. Follow the established code style
-2. Write tests for new features
-3. Update documentation
-4. Create focused, atomic commits
+This is a specialized tool for coverage teams. Contributions should focus on:
+- Import parsers for tournament software formats
+- Graphics templates for different TCG types
+- Coverage workflow improvements
+- Performance optimizations for large tournaments
+
+## Common Use Cases
+
+### Pokemon TCG Coverage
+- Import from Limitless TCG (JSON)
+- Import from RK9 Labs (JSON/PDF)
+- Import from Play! Pokemon (screenshots)
+
+### Magic: The Gathering Coverage
+- Import from Melee.gg (JSON)
+- Import from WotC tools (PDF)
+- Manual entry with PNG screenshots
+
+### Other TCGs
+- Generic JSON import
+- PDF/PNG screenshot support
+- Custom archetype tagging
+
+## Support
+
+For issues, feature requests, or questions, use the GitHub issue tracker.
 
 ## License
 
 MIT
-
-## Resources
-
-- [Supabase Documentation](https://supabase.com/docs)
-- [Express.js Guide](https://expressjs.com/en/guide/routing.html)
-- [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.
