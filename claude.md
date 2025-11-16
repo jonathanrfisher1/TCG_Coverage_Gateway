@@ -12,12 +12,35 @@ This is the TCG Coverage Gateway project - a system designed to manage and track
 
 ## Architecture & Technology Stack
 
-This section will be updated as the project evolves. Expected components may include:
+### Free Tier Services Stack
 
-- **Backend**: API gateway for TCG coverage data
-- **Database**: Data storage for card information, inventory, or coverage metrics
-- **Integration**: Potential connections to TCG data providers or inventory systems
-- **API Layer**: RESTful or GraphQL endpoints for data access
+**Primary Recommendation: Supabase (All-in-One)**
+- **Database**: PostgreSQL (500MB free tier)
+- **File Storage**: Supabase Storage (1GB free tier)
+  - Store PNG decklists
+  - Store PDF coverage documents
+  - Built-in CDN for file delivery
+- **Authentication**: Built-in auth system
+- **API**: Auto-generated REST API from database schema
+- **Real-time**: WebSocket support for live updates
+
+**Alternative Services (Mix-and-Match)**
+- Database: Neon PostgreSQL (3GB free) or PlanetScale MySQL (5GB free)
+- File Storage: Cloudinary (25GB storage + 25GB bandwidth free)
+
+### Application Components
+
+- **Backend**: Node.js/Express or Python/FastAPI
+- **Database**: PostgreSQL for structured TCG data
+  - Card information
+  - Coverage metrics
+  - User data
+  - Decklist metadata
+- **File Storage**:
+  - PNG files: Decklist images, card scans
+  - PDF files: Tournament reports, coverage documents
+- **API Layer**: RESTful endpoints for data access
+- **Integration**: Potential connections to TCG data providers
 
 ## Development Guidelines
 
@@ -62,27 +85,90 @@ Deployment procedures will be documented as the project infrastructure is set up
 
 ## Project Structure
 
-The project structure will be documented here as the codebase develops. Expected directories may include:
-
-- `/src` - Source code
-- `/tests` - Test files
-- `/docs` - Documentation
-- `/config` - Configuration files
-- `/api` - API definitions or routes
+```
+TCG_Coverage_Gateway/
+├── src/
+│   ├── api/
+│   │   ├── routes/
+│   │   │   ├── cards.js
+│   │   │   ├── decklists.js
+│   │   │   ├── coverage.js
+│   │   │   └── upload.js
+│   │   └── middleware/
+│   │       ├── auth.js
+│   │       ├── fileUpload.js
+│   │       └── validation.js
+│   ├── services/
+│   │   ├── supabase.js
+│   │   ├── storage.js
+│   │   └── database.js
+│   ├── models/
+│   │   ├── Card.js
+│   │   ├── Decklist.js
+│   │   └── CoverageEvent.js
+│   └── utils/
+│       ├── fileValidation.js
+│       └── errorHandler.js
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── docs/
+│   └── api/
+├── config/
+│   ├── database.js
+│   └── storage.js
+├── migrations/
+│   └── sql/
+├── .env.example
+├── .gitignore
+├── package.json
+├── README.md
+└── claude.md
+```
 
 ## Environment Setup
 
 ### Prerequisites
 
-List of required tools and versions will be added as the stack is defined:
-- Runtime environment (Node.js, Python, Go, etc.)
-- Database system
-- Package manager
-- Development tools
+**Required:**
+- Node.js (v18 or higher recommended)
+- npm or yarn package manager
+- Git
+- Supabase account (free tier)
+
+**Development Tools:**
+- Code editor (VS Code recommended)
+- Postman or similar API testing tool
+- PostgreSQL client (optional, for local development)
 
 ### Environment Variables
 
-Environment variables required for the project will be documented here.
+**Supabase Configuration:**
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key (server-side only)
+```
+
+**Application Configuration:**
+```
+PORT=3000
+NODE_ENV=development
+API_VERSION=v1
+MAX_FILE_SIZE=10485760  # 10MB for PNG/PDF uploads
+ALLOWED_FILE_TYPES=image/png,application/pdf
+```
+
+**Optional (if using alternative services):**
+```
+# Neon/PlanetScale Database
+DATABASE_URL=postgresql://user:password@host/database
+
+# Cloudinary (if used instead of Supabase Storage)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+```
 
 ## API Documentation
 
@@ -90,7 +176,57 @@ API endpoints and their usage will be documented as they are developed.
 
 ## Database Schema
 
-Database models and relationships will be documented here as the data layer is implemented.
+### Core Tables (PostgreSQL)
+
+**cards**
+- id (uuid, primary key)
+- name (text)
+- set_name (text)
+- card_number (text)
+- rarity (text)
+- tcg_type (text) - e.g., "Pokemon", "Magic", "Yu-Gi-Oh"
+- metadata (jsonb) - flexible storage for card-specific attributes
+- created_at (timestamp)
+- updated_at (timestamp)
+
+**decklists**
+- id (uuid, primary key)
+- title (text)
+- description (text)
+- tcg_type (text)
+- format (text) - e.g., "Standard", "Modern", "Expanded"
+- user_id (uuid, foreign key)
+- image_url (text) - PNG file URL from storage
+- pdf_url (text) - PDF file URL from storage
+- deck_data (jsonb) - card list with quantities
+- created_at (timestamp)
+- updated_at (timestamp)
+
+**coverage_events**
+- id (uuid, primary key)
+- event_name (text)
+- event_date (date)
+- location (text)
+- tcg_type (text)
+- description (text)
+- report_pdf_url (text) - PDF coverage report from storage
+- created_at (timestamp)
+- updated_at (timestamp)
+
+**users**
+- id (uuid, primary key)
+- email (text, unique)
+- username (text, unique)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+### File Storage Structure
+
+**Supabase Storage Buckets:**
+- `decklists-images/` - PNG decklist images
+- `decklists-pdfs/` - PDF decklist exports
+- `coverage-reports/` - PDF tournament/event reports
+- `card-scans/` - PNG card images
 
 ## Troubleshooting
 
@@ -127,11 +263,26 @@ When working on this project:
 
 As development progresses, this file should be updated with:
 
-- [ ] Final technology stack details
-- [ ] Project structure and directory organization
+- [x] Final technology stack details (Supabase + Node.js)
+- [x] Project structure and directory organization
+- [x] Database schema and models (initial design)
+- [x] Environment variables and configuration
 - [ ] Build and deployment commands
 - [ ] API endpoint documentation
-- [ ] Database schema and models
-- [ ] Environment variables and configuration
 - [ ] Testing framework and commands
 - [ ] CI/CD pipeline details
+
+## Free Tier Limits & Monitoring
+
+**Supabase Free Tier:**
+- Database: 500MB (monitor with Supabase dashboard)
+- Storage: 1GB for files (track PNG/PDF usage)
+- Bandwidth: 5GB/month
+- API requests: Unlimited (with rate limiting)
+
+**Best Practices:**
+- Optimize PNG file sizes before upload
+- Use PDF compression for coverage reports
+- Implement pagination for large datasets
+- Monitor storage usage monthly
+- Set up alerts when approaching limits
