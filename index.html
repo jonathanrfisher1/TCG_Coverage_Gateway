@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracket Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1 id="pageTitle">🏆 Bracket Manager</h1>
+        <div class="subtitle">Configure your bracket, manage teams/players, and launch presentation mode</div>
+    </div>
+    
+    <!-- Bracket Settings Panel -->
+    <div class="bracket-settings">
+        <h2>⚙️ Bracket Configuration</h2>
+        <div class="settings-warning" id="settingsWarning">
+            ⚠️ Changing bracket settings will clear all current data!
+        </div>
+        <div class="config-grid">
+            <div class="config-item">
+                <h3>Tournament Type</h3>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="typeTeams" name="tournamentType" value="teams" checked>
+                        <label for="typeTeams">Teams</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="typeSingles" name="tournamentType" value="singles">
+                        <label for="typeSingles">Individual</label>
+                    </div>
+                </div>
+            </div>
+            <div class="config-item" id="playersPerTeamConfig">
+                <h3>Players per Team</h3>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="players2" name="playersPerTeam" value="2">
+                        <label for="players2">2 Players</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="players3" name="playersPerTeam" value="3" checked>
+                        <label for="players3">3 Players</label>
+                    </div>
+                </div>
+            </div>
+            <div class="config-item">
+                <h3>Bracket Size</h3>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="size4" name="bracketSize" value="4">
+                        <label for="size4">4 Teams/Players</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="size8" name="bracketSize" value="8" checked>
+                        <label for="size8">8 Teams/Players</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="size16" name="bracketSize" value="16">
+                        <label for="size16">16 Teams/Players</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="apply-settings-btn" onclick="applyBracketSettings()">Apply Settings & Generate Bracket</button>
+    </div>
+    
+    <div class="controls">
+        <button class="control-btn presentation" onclick="openPresentation()">🎬 Launch Presentation Mode</button>
+        <button class="control-btn settings" onclick="toggleSettings()">⚙️ Presentation Settings</button>
+        <button class="control-btn" onclick="document.getElementById('logoUpload').click()">
+            <span id="logoBtn">🖼️ Select Logo</span>
+        </button>
+        <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)">
+        <button class="control-btn" onclick="downloadPresentation()">💾 Export Bracket HTML</button>
+        <button class="control-btn" onclick="exportBracketData()">📤 Export Data</button>
+        <button class="control-btn" onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+        <input type="file" id="importFile" accept=".json" onchange="importBracketData(event)">
+        <button class="control-btn" onclick="clearResults()">🔄 Clear Results</button>
+        <button class="control-btn" onclick="clearAllData()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">🗑️ Clear All</button>
+    </div>
+    
+    <!-- Presentation Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2>🎨 Presentation Settings</h2>
+            <div class="settings-actions">
+                <button onclick="saveSettings()">💾 Save</button>
+                <button class="reset" onclick="resetSettings()">🔄 Reset</button>
+                <button onclick="toggleSettings()">✕ Close</button>
+            </div>
+        </div>
+        <div class="settings-grid">
+            <div class="settings-category">
+                <h3>📝 General</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Tournament Title</span>
+                    </div>
+                    <input type="text" id="tournamentTitle" placeholder="Enter tournament name" value="Tournament Bracket" style="width: 100%; padding: 8px; background: rgba(26, 41, 66, 0.8); border: 1px solid rgba(92, 184, 209, 0.3); border-radius: 4px; color: #fff; font-family: 'Rajdhani', sans-serif;">
+                </div>
+            </div>
+            <div class="settings-category">
+                <h3>🎯 Layout</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Logo Size</span>
+                        <span class="setting-value" id="logoSizeValue">100px</span>
+                    </div>
+                    <input type="range" id="logoSize" min="60" max="200" value="100" step="10" oninput="updateSettingValue('logoSize', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Match Spacing</span>
+                        <span class="setting-value" id="matchSpacingValue">20px</span>
+                    </div>
+                    <input type="range" id="matchSpacing" min="10" max="60" value="20" step="5" oninput="updateSettingValue('matchSpacing', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Round Gap</span>
+                        <span class="setting-value" id="roundGapValue">40px</span>
+                    </div>
+                    <input type="range" id="roundGap" min="30" max="120" value="40" step="10" oninput="updateSettingValue('roundGap', this.value + 'px')">
+                </div>
+            </div>
+            <div class="settings-category">
+                <h3>✏️ Typography</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Team Name Size</span>
+                        <span class="setting-value" id="teamNameSizeValue">16px</span>
+                    </div>
+                    <input type="range" id="teamNameSize" min="12" max="28" value="16" step="2" oninput="updateSettingValue('teamNameSize', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Player Name Size</span>
+                        <span class="setting-value" id="playerNameSizeValue">13px</span>
+                    </div>
+                    <input type="range" id="playerNameSize" min="10" max="20" value="13" step="1" oninput="updateSettingValue('playerNameSize', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Deck Info Size</span>
+                        <span class="setting-value" id="deckInfoSizeValue">11px</span>
+                    </div>
+                    <input type="range" id="deckInfoSize" min="8" max="16" value="11" step="1" oninput="updateSettingValue('deckInfoSize', this.value + 'px')">
+                </div>
+            </div>
+            <div class="settings-category">
+                <h3>🎨 Colors</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Match Opacity</span>
+                        <span class="setting-value" id="matchOpacityValue">0.85</span>
+                    </div>
+                    <input type="range" id="matchOpacity" min="0.5" max="1" value="0.85" step="0.05" oninput="updateSettingValue('matchOpacity', this.value)">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Border Opacity</span>
+                        <span class="setting-value" id="borderOpacityValue">0.4</span>
+                    </div>
+                    <input type="range" id="borderOpacity" min="0.1" max="0.8" value="0.4" step="0.1" oninput="updateSettingValue('borderOpacity', this.value)">
+                </div>
+            </div>
+            <div class="settings-category">
+                <h3>📏 Dimensions</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Match Width</span>
+                        <span class="setting-value" id="matchWidthValue">260px</span>
+                    </div>
+                    <input type="range" id="matchWidth" min="220" max="360" value="260" step="20" oninput="updateSettingValue('matchWidth', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Match Padding</span>
+                        <span class="setting-value" id="matchPaddingValue">12px</span>
+                    </div>
+                    <input type="range" id="matchPadding" min="8" max="24" value="12" step="2" oninput="updateSettingValue('matchPadding', this.value + 'px')">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Corner Radius</span>
+                        <span class="setting-value" id="cornerRadiusValue">10px</span>
+                    </div>
+                    <input type="range" id="cornerRadius" min="0" max="24" value="10" step="2" oninput="updateSettingValue('cornerRadius', this.value + 'px')">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="save-confirmation" id="saveConfirmation">✓ Auto-saved</div>
+    
+    <!-- Editor Container -->
+    <div class="editor-container" id="editorContainer">
+        <!-- Bracket will be dynamically generated here -->
+    </div>
+    
+    <!-- Presentation Mode Container -->
+    <div class="presentation-mode" id="presentationMode">
+        <!-- Presentation view will be shown here -->
+    </div>
+    
+    <!-- Load JavaScript Modules -->
+    <script src="config.js"></script>
+    <script src="storage.js"></script>
+    <script src="bracket-generator.js"></script>
+    <script src="presentation.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
