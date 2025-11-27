@@ -1,0 +1,50 @@
+# Azure Bracket Manager - .gitignore
+
+# Azure configuration (contains resource names, may contain sensitive info)
+azure-config.txt
+azure-setup.log
+
+# Node modules
+node_modules/
+functions/node_modules/
+
+# Azure Functions
+functions/local.settings.json
+functions/.vscode/
+functions/obj/
+functions/bin/
+
+# Environment variables
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Build outputs
+dist/
+build/
+*.zip
+
+# Local development
+local.settings.json
