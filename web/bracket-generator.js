@@ -90,8 +90,7 @@ function generateBracket() {
                         <input type="text" id="${playerId}-leader" placeholder="Leader" oninput="saveToLocalStorage()">
                         <input type="text" id="${playerId}-base" placeholder="Base" oninput="saveToLocalStorage()">
                     </div>`;
-                    html += `<label class="upload-btn" id="${playerId}-btn" for="${playerId}-file">📎 Decklist</label>`;
-                    html += `<input type="file" id="${playerId}-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDecklistUpload(event, '${playerId}')">`;
+                    html += `<input type="text" id="${playerId}-decklist" class="decklist-url-input" placeholder="🔗 Decklist URL (optional)" oninput="handleDecklistUrlInput('${playerId}')">`;
                 }
             } else {
                 // Singles mode - just one player
@@ -101,8 +100,7 @@ function generateBracket() {
                     <input type="text" id="${playerId}-leader" placeholder="Leader" oninput="saveToLocalStorage()" style="grid-column: 1/2;">
                     <input type="text" id="${playerId}-base" placeholder="Base" oninput="saveToLocalStorage()" style="grid-column: 2/4;">
                 </div>`;
-                html += `<label class="upload-btn" id="${playerId}-btn" for="${playerId}-file">📎 Decklist</label>`;
-                html += `<input type="file" id="${playerId}-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDecklistUpload(event, '${playerId}')">`;
+                html += `<input type="text" id="${playerId}-decklist" class="decklist-url-input" placeholder="🔗 Decklist URL (optional)" oninput="handleDecklistUrlInput('${playerId}')">`;
             }
             
             html += `<button class="winner-btn" onclick="markWinner('${matchId}', ${teamNum})">${type === 'teams' ? 'Team' : 'Player'} ${teamNum + 1} Wins</button>`;
@@ -111,15 +109,17 @@ function generateBracket() {
             return teamDiv;
         }
         
-        function handleDecklistUpload(event, playerId) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function handleDecklistUrlInput(playerId) {
+            const input = document.getElementById(`${playerId}-decklist`);
+            const url = input?.value.trim();
             
-            decklists[playerId] = file.name;
-            
-            const btn = document.getElementById(playerId + '-btn');
-            btn.classList.add('has-file');
-            btn.textContent = '✓ ' + file.name;
+            if (url) {
+                decklists[playerId] = url;
+                input.classList.add('has-url');
+            } else {
+                delete decklists[playerId];
+                input.classList.remove('has-url');
+            }
             
             saveToLocalStorage();
         }
@@ -128,13 +128,16 @@ function generateBracket() {
             const file = event.target.files[0];
             if (!file) return;
             
-            // Store actual filename as relative path
-            logoData = `./${file.name}`;
-            
-            const logoBtn = document.getElementById('logoBtn');
-            logoBtn.innerHTML = '✓ Logo Loaded: ' + file.name;
-            document.querySelector('button[onclick*="logoUpload"]').style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
-            saveToLocalStorage();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                logoData = e.target.result; // Store as base64 data URL
+                
+                const logoBtn = document.getElementById('logoBtn');
+                logoBtn.innerHTML = '✓ Logo Loaded';
+                document.querySelector('button[onclick*="logoUpload"]').style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                saveToLocalStorage();
+            };
+            reader.readAsDataURL(file);
         }
         
         function markWinner(matchId, winnerTeam) {
@@ -193,13 +196,13 @@ function generateBracket() {
                         if (target) target.value = source;
                     });
                     
-                    // Copy decklist reference
+                    // Copy decklist URL
                     if (decklists[sourcePlayer]) {
                         decklists[targetPlayer] = decklists[sourcePlayer];
-                        const btn = document.getElementById(targetPlayer + '-btn');
-                        if (btn) {
-                            btn.classList.add('has-file');
-                            btn.textContent = '✓ ' + decklists[sourcePlayer];
+                        const decklistInput = document.getElementById(`${targetPlayer}-decklist`);
+                        if (decklistInput) {
+                            decklistInput.value = decklists[sourcePlayer];
+                            decklistInput.classList.add('has-url');
                         }
                     }
                 }
@@ -213,10 +216,10 @@ function generateBracket() {
                 
                 if (decklists[sourceTeamId]) {
                     decklists[targetTeamId] = decklists[sourceTeamId];
-                    const btn = document.getElementById(targetTeamId + '-btn');
-                    if (btn) {
-                        btn.classList.add('has-file');
-                        btn.textContent = '✓ ' + decklists[sourceTeamId];
+                    const decklistInput = document.getElementById(`${targetTeamId}-decklist`);
+                    if (decklistInput) {
+                        decklistInput.value = decklists[sourceTeamId];
+                        decklistInput.classList.add('has-url');
                     }
                 }
             }

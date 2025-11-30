@@ -63,7 +63,7 @@ function saveToLocalStorage() {
                 // Update UI after loading
                 setTimeout(() => {
                     updateWinnerButtons();
-                    updateUploadButtons();
+                    updateDecklistInputs();
                 }, 100);
                 
                 console.log('✓ Loaded from localStorage');
@@ -83,12 +83,12 @@ function saveToLocalStorage() {
             });
         }
         
-        function updateUploadButtons() {
-            Object.keys(decklists).forEach(playerId => {
-                const btn = document.getElementById(playerId + '-btn');
-                if (btn) {
-                    btn.classList.add('has-file');
-                    btn.textContent = '✓ ' + decklists[playerId];
+        function updateDecklistInputs() {
+            Object.entries(decklists).forEach(([playerId, url]) => {
+                const input = document.getElementById(playerId + '-decklist');
+                if (input && url) {
+                    input.value = url;
+                    input.classList.add('has-url');
                 }
             });
         }
@@ -100,7 +100,7 @@ function saveToLocalStorage() {
                 decklists: decklists,
                 logoData: logoData,
                 exportDate: new Date().toISOString(),
-                tournamentName: 'Bothan Invitational II 8K'
+                tournamentName: document.getElementById('tournamentTitle')?.value || 'Tournament Bracket'
             };
             
             const inputs = {};
@@ -113,7 +113,7 @@ function saveToLocalStorage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `bothan_invitational_ii_8k_${bracketConfig.type}_${bracketConfig.bracketSize}_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `bracket_${bracketConfig.type}_${bracketConfig.bracketSize}_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
             alert('✓ Bracket data exported successfully!');
@@ -142,12 +142,12 @@ function saveToLocalStorage() {
                         // Detect players per team
                         const hasP3 = Object.keys(data.inputs).some(key => key.includes('-p3-'));
                         
-                        bracketConfig.type = 'team';
+                        bracketConfig.type = 'teams';
                         bracketConfig.playersPerTeam = hasP3 ? 3 : 2;
                         bracketConfig.bracketSize = hasQF ? 8 : (hasSF ? 4 : 2);
                         
                         // Update UI
-                        document.querySelector(`input[name="tournamentType"][value="team"]`).checked = true;
+                        document.querySelector(`input[name="tournamentType"][value="teams"]`).checked = true;
                         document.querySelector(`input[name="playersPerTeam"][value="${bracketConfig.playersPerTeam}"]`).checked = true;
                         document.querySelector(`input[name="bracketSize"][value="${bracketConfig.bracketSize}"]`).checked = true;
                         updatePlayerPerTeamVisibility();
@@ -187,8 +187,8 @@ function saveToLocalStorage() {
                                     }
                                 });
                                 updateWinnerButtons();
-                                updateUploadButtons();
-                            }, 200); // Increased timeout to ensure bracket is fully generated
+                                updateDecklistInputs();
+                            }, 200);
                         }
                     } else {
                         // Standard format
@@ -207,7 +207,7 @@ function saveToLocalStorage() {
                                     if (input) input.value = value;
                                 });
                                 updateWinnerButtons();
-                                updateUploadButtons();
+                                updateDecklistInputs();
                             }, 100);
                         }
                     }
@@ -259,7 +259,7 @@ function saveToLocalStorage() {
                 });
             }
             
-            // Translate decklists - handle both old format (with filename/type) and new format (just filename)
+            // Translate decklists - handle both old format (with filename/type) and new format (just URL string)
             if (data.decklists) {
                 Object.entries(data.decklists).forEach(([oldKey, value]) => {
                     // Translate the key from qf1-t1-p1 to r0m0t0p0

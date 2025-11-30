@@ -16,7 +16,7 @@ function openPresentation() {
             a.download = `tournament_bracket_${new Date().toISOString().split('T')[0]}.html`;
             a.click();
             URL.revokeObjectURL(url);
-            alert('✓ Presentation HTML downloaded! Place PDF/image files in ./decklists/ folder relative to the HTML file.');
+            alert('✓ Presentation HTML downloaded!');
         }
         
         function generatePresentationHTML() {
@@ -68,12 +68,14 @@ function openPresentation() {
                             const playerName = document.getElementById(`${playerId}-name`)?.value || '';
                             const leader = document.getElementById(`${playerId}-leader`)?.value || '';
                             const base = document.getElementById(`${playerId}-base`)?.value || '';
-                            const decklistFile = decklists[playerId];
+                            const decklistUrl = decklists[playerId];
                             
                             if (playerName || leader || base) {
                                 const deckInfo = (leader && base) ? `${leader} / ${base}` : (leader || base);
+                                const escapedUrl = decklistUrl ? decklistUrl.replace(/'/g, "&apos;") : '';
+                                const escapedName = playerName.replace(/"/g, "&quot;").replace(/'/g, "&apos;");
                                 
-                                html += `<div class="player${decklistFile ? ' has-decklist' : ''}" ${decklistFile ? `onclick="openDecklist('./decklists/${decklistFile}')"` : ''}>`;
+                                html += `<div class="player${decklistUrl ? ' has-decklist' : ''}" ${decklistUrl ? `onclick="openDecklist('${escapedUrl}', '${escapedName}')"` : ''}>`;
                                 html += `<span class="player-compact">${playerName}${deckInfo ? ' • ' + deckInfo : ''}</span>`;
                                 html += '</div>';
                             }
@@ -82,13 +84,16 @@ function openPresentation() {
                         const playerName = document.getElementById(`${teamId}-name`)?.value || `Player ${team + 1}`;
                         const leader = document.getElementById(`${teamId}-leader`)?.value || '';
                         const base = document.getElementById(`${teamId}-base`)?.value || '';
-                        const decklistFile = decklists[teamId];
+                        const decklistUrl = decklists[teamId];
                         
                         html += `<div class="team-name">${playerName}</div>`;
                         const deckInfo = (leader && base) ? `${leader} / ${base}` : (leader || base);
                         
-                        if (deckInfo || decklistFile) {
-                            html += `<div class="player${decklistFile ? ' has-decklist' : ''}" ${decklistFile ? `onclick="openDecklist('./decklists/${decklistFile}')"` : ''}>`;
+                        if (deckInfo || decklistUrl) {
+                            const escapedUrl = decklistUrl ? decklistUrl.replace(/'/g, "&apos;") : '';
+                            const escapedName = playerName.replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+                            
+                            html += `<div class="player${decklistUrl ? ' has-decklist' : ''}" ${decklistUrl ? `onclick="openDecklist('${escapedUrl}', '${escapedName}')"` : ''}>`;
                             html += `<span class="player-compact">${deckInfo}</span>`;
                             html += '</div>';
                         }
@@ -765,6 +770,30 @@ function openPresentation() {
             transform: scale(1.1);
         }
         
+        .modal-download {
+            position: absolute;
+            top: -40px;
+            right: 50px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(46, 204, 113, 0.8);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        .modal-download:hover {
+            background: rgba(46, 204, 113, 1);
+            transform: scale(1.05);
+        }
+        
         @media print {
             body { background: white; color: black; }
             .match { border-color: #333; page-break-inside: avoid; }
@@ -786,22 +815,52 @@ function openPresentation() {
     <div class="decklist-modal" id="decklistModal" onclick="closeDecklist(event)">
         <div class="decklist-content" onclick="event.stopPropagation()">
             <span class="modal-close" onclick="closeDecklist()">&times;</span>
+            <button class="modal-download" id="downloadBtn" onclick="downloadDecklist()">⬇️ Download</button>
             <img id="decklistImage" src="" alt="Decklist">
         </div>
     </div>
     
     <script>
-        function openDecklist(path) {
+        let currentDecklistUrl = '';
+        let currentPlayerName = '';
+        
+        function openDecklist(url, playerName) {
+            currentDecklistUrl = url;
+            currentPlayerName = playerName;
             const modal = document.getElementById('decklistModal');
             const img = document.getElementById('decklistImage');
-            img.src = path;
+            img.src = url;
             modal.classList.add('active');
+        }
+        
+        function downloadDecklist() {
+            if (!currentDecklistUrl) return;
+            
+            // Extract filename from URL or use player name
+            const urlParts = currentDecklistUrl.split('/');
+            const originalFilename = urlParts[urlParts.length - 1];
+            const extension = originalFilename.split('.').pop();
+            
+            // Create filename from player name
+            const sanitizedName = currentPlayerName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const filename = sanitizedName ? sanitizedName + '_decklist.' + extension : originalFilename;
+            
+            // Create a temporary link and trigger download
+            const a = document.createElement('a');
+            a.href = currentDecklistUrl;
+            a.download = filename;
+            a.target = '_blank'; // Fallback for CORS issues
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
         
         function closeDecklist(event) {
             if (!event || event.target.id === 'decklistModal' || event.target.className.includes('modal-close')) {
                 const modal = document.getElementById('decklistModal');
                 modal.classList.remove('active');
+                currentDecklistUrl = '';
+                currentPlayerName = '';
             }
         }
         
@@ -838,12 +897,14 @@ function openPresentation() {
                         const playerName = document.getElementById(`${playerId}-name`)?.value || '';
                         const leader = document.getElementById(`${playerId}-leader`)?.value || '';
                         const base = document.getElementById(`${playerId}-base`)?.value || '';
-                        const decklistFile = decklists[playerId];
+                        const decklistUrl = decklists[playerId];
                         
                         if (playerName || leader || base) {
                             const deckInfo = (leader && base) ? `${leader} / ${base}` : (leader || base);
+                            const escapedUrl = decklistUrl ? decklistUrl.replace(/'/g, "&apos;") : '';
+                            const escapedName = playerName.replace(/"/g, "&quot;").replace(/'/g, "&apos;");
                             
-                            html += `<div class="player${decklistFile ? ' has-decklist' : ''}" ${decklistFile ? `onclick="openDecklist('./decklists/${decklistFile}')"` : ''}>`;
+                            html += `<div class="player${decklistUrl ? ' has-decklist' : ''}" ${decklistUrl ? `onclick="openDecklist('${escapedUrl}', '${escapedName}')"` : ''}>`;
                             html += `<span class="player-compact">${playerName}${deckInfo ? ' • ' + deckInfo : ''}</span>`;
                             html += '</div>';
                         }
@@ -853,13 +914,16 @@ function openPresentation() {
                     const playerName = document.getElementById(`${teamId}-name`)?.value || `Player ${team + 1}`;
                     const leader = document.getElementById(`${teamId}-leader`)?.value || '';
                     const base = document.getElementById(`${teamId}-base`)?.value || '';
-                    const decklistFile = decklists[teamId];
+                    const decklistUrl = decklists[teamId];
                     
                     html += `<div class="team-name">${playerName}</div>`;
                     const deckInfo = (leader && base) ? `${leader} / ${base}` : (leader || base);
                     
-                    if (deckInfo || decklistFile) {
-                        html += `<div class="player${decklistFile ? ' has-decklist' : ''}" ${decklistFile ? `onclick="openDecklist('./decklists/${decklistFile}')"` : ''}>`;
+                    if (deckInfo || decklistUrl) {
+                        const escapedUrl = decklistUrl ? decklistUrl.replace(/'/g, "&apos;") : '';
+                        const escapedName = playerName.replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+                        
+                        html += `<div class="player${decklistUrl ? ' has-decklist' : ''}" ${decklistUrl ? `onclick="openDecklist('${escapedUrl}', '${escapedName}')"` : ''}>`;
                         html += `<span class="player-compact">${deckInfo}</span>`;
                         html += '</div>';
                     }
