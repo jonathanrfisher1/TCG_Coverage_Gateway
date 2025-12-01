@@ -6,7 +6,9 @@
         "ciam": {
           "registration": {
             "clientIdSettingName": "AAD_CLIENT_ID",
-            "clientSecretSettingName": "AAD_CLIENT_SECRET",
+            "clientCredential": {
+              "clientSecretSettingName": "AAD_CLIENT_SECRET"
+            },
             "openIdConnectConfiguration": {
               "wellKnownOpenIdConfiguration": "https://tcgcoveragegateway.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
             }
