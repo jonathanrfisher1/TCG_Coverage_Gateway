@@ -2,21 +2,11 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
   "auth": {
     "identityProviders": {
-      "customOpenIdConnectProviders": {
-        "ciam": {
-          "registration": {
-            "clientIdSettingName": "AAD_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "AAD_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://fa495547-0d57-4801-8c8c-6b3981e7e4e4.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
-            "scopes": []
-          }
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://fa495547-0d57-4801-8c8c-6b3981e7e4e4.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0",
+          "clientIdSettingName": "AAD_CLIENT_ID",
+          "clientSecretSettingName": "AAD_CLIENT_SECRET"
         }
       }
     }
@@ -28,7 +18,7 @@
     },
     {
       "route": "/login",
-      "redirect": "/.auth/login/ciam"
+      "redirect": "/.auth/login/aad"
     },
     {
       "route": "/logout",
@@ -41,7 +31,7 @@
   ],
   "responseOverrides": {
     "401": {
-      "redirect": "/.auth/login/ciam",
+      "redirect": "/.auth/login/aad",
       "statusCode": 302
     }
   }
