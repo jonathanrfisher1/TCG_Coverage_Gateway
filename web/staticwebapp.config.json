@@ -10,8 +10,12 @@
               "clientSecretSettingName": "AAD_CLIENT_SECRET"
             },
             "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://tcgcoveragegateway.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
+              "wellKnownOpenIdConfiguration": "https://fa495547-0d57-4801-8c8c-6b3981e7e4e4.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
             }
+          },
+          "login": {
+            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+            "scopes": []
           }
         }
       }
