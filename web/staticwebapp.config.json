@@ -2,14 +2,19 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
   "auth": {
     "identityProviders": {
-      "azureActiveDirectory": {
-        "registration": {
-          "openIdIssuer": "https://tcgcoveragegateway.ciamlogin.com/tcgcoveragegateway.onmicrosoft.com/v2.0",
-          "clientIdSettingName": "AAD_CLIENT_ID",
-          "clientSecretSettingName": "AAD_CLIENT_SECRET"
-        },
-        "login": {
-          "loginParameters": ["domain_hint=tcgcoveragegateway.onmicrosoft.com"]
+      "customOpenIdConnectProviders": {
+        "ciam": {
+          "registration": {
+            "clientIdSettingName": "AAD_CLIENT_ID",
+            "clientSecretSettingName": "AAD_CLIENT_SECRET",
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://tcgcoveragegateway.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+            "scopes": ["openid", "profile", "email"]
+          }
         }
       }
     }
@@ -17,7 +22,7 @@
   "routes": [
     {
       "route": "/login",
-      "redirect": "/.auth/login/aad"
+      "redirect": "/.auth/login/ciam"
     },
     {
       "route": "/logout",
@@ -30,7 +35,7 @@
   ],
   "responseOverrides": {
     "401": {
-      "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer",
+      "redirect": "/.auth/login/ciam?post_login_redirect_uri=.referrer",
       "statusCode": 302
     }
   }
