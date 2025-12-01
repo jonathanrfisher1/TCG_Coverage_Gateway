@@ -12,10 +12,6 @@
             "openIdConnectConfiguration": {
               "wellKnownOpenIdConfiguration": "https://tcgcoveragegateway.ciamlogin.com/fa495547-0d57-4801-8c8c-6b3981e7e4e4/v2.0/.well-known/openid-configuration"
             }
-          },
-          "login": {
-            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-            "scopes": ["openid", "profile", "email"]
           }
         }
       }
@@ -23,21 +19,13 @@
   },
   "routes": [
     {
-      "route": "/login",
-      "redirect": "/.auth/login/ciam"
-    },
-    {
-      "route": "/logout",
-      "redirect": "/.auth/logout"
-    },
-    {
       "route": "/*",
       "allowedRoles": ["authenticated"]
     }
   ],
   "responseOverrides": {
     "401": {
-      "redirect": "/.auth/login/ciam?post_login_redirect_uri=.referrer",
+      "redirect": "/.auth/login/ciam",
       "statusCode": 302
     }
   }
