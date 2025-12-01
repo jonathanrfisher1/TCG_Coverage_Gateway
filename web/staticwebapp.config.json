@@ -23,6 +23,18 @@
   },
   "routes": [
     {
+      "route": "/.auth/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/login",
+      "redirect": "/.auth/login/ciam"
+    },
+    {
+      "route": "/logout",
+      "redirect": "/.auth/logout"
+    },
+    {
       "route": "/*",
       "allowedRoles": ["authenticated"]
     }
